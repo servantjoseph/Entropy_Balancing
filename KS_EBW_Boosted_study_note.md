@@ -1,4 +1,6 @@
 
+
+## np.linalg.lstsq(H, g) in eb_fit
 "Even if H is singular, lstsq can often provide a solution that minimizes the Euclidean 2-norm ||H * step - g||":
 This statement refers to the fundamental difference between np.linalg.solve and np.linalg.lstsq when dealing with systems where the matrix H (often denoted A in general linear algebra) is singular or rectangular.
 
