@@ -83,3 +83,47 @@ def hybrid(Xs,Xt,Xhard,mu_hard,q0=None,B=100,nu=0.10,min_mass=0.001,interaction_
         if effective_sample_size(w_new)<min_ess_frac*Xs.shape[0]: break
         w=w_new; nt+=1
     return w,nt
+
+#Below functions were used for the ACS analysis
+def cell_props(ids, weights, n_leaves=None):
+    ids = np.asarray(ids, dtype=int)
+    if n_leaves is None:
+        n_leaves = int(ids.max()) + 1
+    out = np.bincount(ids, weights=weights, minlength=n_leaves).astype(float)
+    return out / out.sum()
+
+def validation_leaf_imbalance(Xs, Xt, ws, wt):
+    """Average total variation across fixed two-variable median partitions."""
+    p = Xs.shape[1]
+    # Use first 10 compact features to avoid too many cells.
+    p_use = min(10, p)
+    vals = []
+    thresholds = np.median(Xt[:, :p_use], axis=0)
+    for j in range(p_use):
+        for k in range(j + 1, p_use):
+            ids_s = (Xs[:, j] > thresholds[j]).astype(int) + 2 * (Xs[:, k] > thresholds[k]).astype(int)
+            ids_t = (Xt[:, j] > thresholds[j]).astype(int) + 2 * (Xt[:, k] > thresholds[k]).astype(int)
+            ps = cell_props(ids_s, ws, 4)
+            pt = cell_props(ids_t, wt, 4)
+            vals.append(0.5 * np.sum(np.abs(ps - pt)))
+    return float(np.mean(vals))
+
+def summarize_results(raw):
+    rows = []
+    for method, g in raw.groupby("method"):
+        err = g["error"].values
+        rows.append({
+            "method": method,
+            "mean_estimate": g["estimate"].mean(),
+            "bias": err.mean(),
+            "abs_bias": abs(err.mean()),
+            "rmse": math.sqrt(np.mean(err ** 2)),
+            "mae": np.mean(np.abs(err)),
+            "main_l2_mean": g["main_l2"].mean(),
+            "pair_l2_mean": g["pair_l2"].mean(),
+            "validation_tv_mean": g["validation_tv"].mean(),
+            "ess_mean": g["ess"].mean(),
+            "max_weight_mean": g["max_weight"].mean(),
+        })
+    return pd.DataFrame(rows).sort_values("rmse")
+
