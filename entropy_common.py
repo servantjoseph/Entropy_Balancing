@@ -2,6 +2,7 @@
 Common entropy-balancing utilities and helper functions.
 """
 import numpy as np
+import pandas as pd
 import math
 from sklearn.tree import DecisionTreeClassifier
 
