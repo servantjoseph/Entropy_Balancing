@@ -1,0 +1,52 @@
+{
+  "seed": 20260625,
+  "R": 1000,
+  "n_source": 450,
+  "N_adult_pseudopopulation": 1561,
+  "target_mean_log_income": 5.669529960829974,
+  "target_mean_income": 24522.91479820628,
+  "main_feature_count": 20,
+  "compact_feature_count": 12,
+  "failures": {
+    "main": 0,
+    "pairwise": 0,
+    "hybrid_main_init": 0,
+    "hybrid_pairwise_init": 0
+  },
+  "main_feature_names": [
+    "age",
+    "hrs_work_imp",
+    "hrs_work_missing",
+    "time_to_work_imp",
+    "time_to_work_missing",
+    "employment_not in labor force",
+    "employment_unemployed",
+    "race_black",
+    "race_other",
+    "race_white",
+    "gender_male",
+    "citizen_yes",
+    "lang_other",
+    "married_yes",
+    "edu_grad",
+    "edu_hs or lower",
+    "disability_yes",
+    "birth_qrtr_jan thru mar",
+    "birth_qrtr_jul thru sep",
+    "birth_qrtr_oct thru dec"
+  ],
+  "compact_feature_names": [
+    "age",
+    "hrs_work",
+    "commute",
+    "employed",
+    "male",
+    "college",
+    "grad",
+    "nonwhite",
+    "citizen",
+    "english",
+    "married",
+    "disabled"
+  ]
+}
