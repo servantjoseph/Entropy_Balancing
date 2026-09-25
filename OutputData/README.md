@@ -1,5 +1,5 @@
 
-Absolutely — here is the command with a line-by-line explanation.
+The command with a line-by-line explanation.
 
 ```bash
 mkdir -p OutputData
