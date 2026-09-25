@@ -47,10 +47,10 @@
 \maketitle
 
 \begin{abstract}
-Entropy balancing reweights a sample to match prespecified target moments, but its performance depends on selecting appropriate balance functions. Main effects and raw pairwise products may not capture nonlinear, localized, or higher-order distributional differences. We propose hybrid tree-boosted entropy balancing, which preserves trusted hard calibration constraints while using shallow decision trees to identify additional imbalanced regions. Tree-leaf indicators define adaptive balance functions, multiplicative entropy updates reduce their discrepancies, and a subsequent projection restores exact balance on the hard moments. The procedure is formulated as projected stagewise optimization of a hard-constrained Kullback--Leibler objective over additive tree-based log-weight corrections. We evaluate the method using a Kang--Schafer-style missing-data simulation and a real-data-based analysis of 2012 American Community Survey microdata. In the simulation, the pairwise EB-offset hybrid achieves the lowest RMSE among the weighting estimators while preserving main-effect and pairwise calibration. In the ACS analysis, the hybrid improves mean-income RMSE and validation leaf balance relative to main-effect entropy balancing, while the pairwise EB-offset variant remains competitive with a strong fixed pairwise benchmark. These results support using tree boosting as an adaptive interaction-discovery layer built on interpretable fixed-moment calibration.
+Entropy balancing reweights a sample to match prespecified target moments, but its performance depends on selecting appropriate balance functions. Main effects and raw pairwise products may not captur[...]
 \end{abstract}
 
-\textbf{Keywords:} entropy balancing; calibration weighting; boosting; decision trees; interaction balance; sample reweighting; survey calibration; missing data; nonlinear interactions; variable importance.
+\textbf{Keywords:} entropy balancing; calibration weighting; boosting; decision trees; interaction balance; sample reweighting; survey calibration; missing data; nonlinear interactions; variable impor[...]
 
 \newpage
 \tableofcontents
@@ -58,42 +58,42 @@ Entropy balancing reweights a sample to match prespecified target moments, but i
 
 \section{Introduction}
 
-Entropy balancing is a widely used method for constructing sample weights that match user-specified target moments. Given source-sample covariates and external target moments, the method finds weights that remain close to the original weights while satisfying calibration constraints. In its most familiar form, entropy balancing solves a convex optimization problem with linear moment constraints. This makes the method attractive because it provides transparent weights, exact balance when feasible, and a natural exponential-tilting interpretation.
+Entropy balancing is a widely used method for constructing sample weights that match user-specified target moments. Given source-sample covariates and external target moments, the method finds weights[...] 
 
-The strength of entropy balancing is also a limitation: the analyst must specify the balance functions. If the analyst supplies only main effects, the method balances only main effects. If the analyst supplies main effects and all raw pairwise products, the method balances those products. But many important population differences are not well represented by raw products. They may be nonlinear, thresholded, localized, or driven by joint-tail behavior. For example, even if a method balances $E(X_0)$, $E(X_1)$, and $E(X_0X_1)$, it may fail to balance
+The strength of entropy balancing is also a limitation: the analyst must specify the balance functions. If the analyst supplies only main effects, the method balances only main effects. If the analyst[...]
 \begin{equation*}
 E\left[\frac{\exp\{a(|X_0X_1|-c)\}}{1+\exp\{a(|X_0X_1|-c)\}}\right],
 \end{equation*}
 which captures whether two variables are jointly extreme, regardless of the sign of the product.
 
-This problem motivates a boosted extension of entropy balancing. The central idea is to retain the clear calibration structure of entropy balancing but allow the algorithm to search adaptively for interaction regions that remain imbalanced. Decision trees are natural weak learners for this task because their leaves define localized regions of covariate space. A leaf might represent a simple main-effect region, such as $X_0>c$, or an interaction region, such as $X_0>c_0$ and $X_1\leq c_1$. Tree leaves therefore act as adaptive balance functions.
+This problem motivates a boosted extension of entropy balancing. The central idea is to retain the clear calibration structure of entropy balancing but allow the algorithm to search adaptively for int[...] 
 
 This manuscript develops a hybrid version of tree-boosted entropy balancing. The proposed method has two layers:
 \begin{enumerate}[leftmargin=2em]
-\item \textbf{Hard calibration layer.} The analyst chooses a set of hard moments that must be preserved, such as main-effect target means. These moments are balanced exactly, up to numerical tolerance.
-\item \textbf{Boosted interaction layer.} A sequence of shallow trees identifies additional regions where the current weighted sample differs from the target. The weights are updated within the tree leaves using entropy-raking multipliers, and then projected back to the hard calibration constraints.
+\item \textbf{Hard calibration layer.} The analyst chooses a set of hard moments that must be preserved, such as main-effect target means. These moments are balanced exactly, up to numerical tolerance[...]
+\item \textbf{Boosted interaction layer.} A sequence of shallow trees identifies additional regions where the current weighted sample differs from the target. The weights are updated within the tree l[...]
 \end{enumerate}
 
-The method is designed to answer a specific practical question: can we preserve classical calibration balance on a trusted set of moments while adaptively improving balance on nonlinear or interaction structure not explicitly supplied as a simple fixed design matrix?
+The method is designed to answer a specific practical question: can we preserve classical calibration balance on a trusted set of moments while adaptively improving balance on nonlinear or interaction[...]
 
 
 \subsection{Main contributions}
 
 The manuscript makes five contributions.
 
-First, it gives the boosted method an explicit optimization target. The method is formulated as a projected stagewise optimizer for a hard-constrained Kullback--Leibler dual objective over an additive ensemble of shallow-tree log-weight corrections. This is important because it clarifies that the algorithm is not merely a heuristic sequence of tree updates. Its objective is to keep the final weights close to the base weights, enforce exact balance on trusted hard moments, and build many weak tree corrections that sequentially reduce balance discrepancies detectable by shallow-tree partitions.
+First, it gives the boosted method an explicit optimization target. The method is formulated as a projected stagewise optimizer for a hard-constrained Kullback--Leibler dual objective over an additive[...] 
 
-Second, it formulates tree-boosted entropy balancing using user-provided target moments. Earlier intuitive descriptions of tree-based reweighting often use target microdata or target weights. Here the target moment for a tree leaf is treated as an external target moment, making the method directly comparable with ordinary entropy balancing.
+Second, it formulates tree-boosted entropy balancing using user-provided target moments. Earlier intuitive descriptions of tree-based reweighting often use target microdata or target weights. Here the[...] 
 
 Third, it derives the multiplicative tree-leaf update from an entropy projection. For a fixed tree partition, the update
 \begin{equation*}
 \widetilde w_i \propto w_i \left(\frac{\mu_L}{p_L}\right)^\nu, \qquad x_i\in L,
 \end{equation*}
-where $p_L$ is the current source mass in leaf $L$, $\mu_L$ is the target mass, and $\nu$ is a learning rate, is not an arbitrary boosting rule. It is the entropy projection onto tree-leaf margins, with shrinkage in log-weight space.
+where $p_L$ is the current source mass in leaf $L$, $\mu_L$ is the target mass, and $\nu$ is a learning rate, is not an arbitrary boosting rule. It is the entropy projection onto tree-leaf margins, wi[...] 
 
-Fourth, it introduces a hard-projection step after each tree update. The hard projection solves another entropy projection problem, using the temporary tree-updated weights as base weights, and restores exact balance on the hard moments. This addresses the concern that a flexible boosted method can improve interaction balance but disturb trusted main-effect constraints.
+Fourth, it introduces a hard-projection step after each tree update. The hard projection solves another entropy projection problem, using the temporary tree-updated weights as base weights, and restor[...] 
 
-Fifth, it presents a Kang--Schafer-style simulation study and a real-data-based ACS microdata analysis, including both main EB-offset and pairwise EB-offset hybrid boosted EB variants. The simulation examines a setting in which the analyst observes transformed covariates rather than the latent variables driving the response and outcome mechanisms. The ACS analysis uses real covariate and income data but creates biased source samples by a known nonlinear selection mechanism, allowing bias and RMSE to be evaluated against the full-sample benchmark. Together, these studies evaluate whether the method can improve nonlinear balance and downstream estimation while preserving the selected hard calibration moments.
+Fifth, it presents a Kang--Schafer-style simulation study and a real-data-based ACS microdata analysis, including both main EB-offset and pairwise EB-offset hybrid boosted EB variants. The simulation [...]
 
 \section{Classical entropy balancing}
 
@@ -176,16 +176,16 @@ for a nonlinear function $g$. This observation is the central motivation for boo
 
 \section{Fixed-moment calibration benchmarks}
 
-The simulations in this paper compare the proposed boosted method against classical fixed-moment entropy-balancing benchmarks. In these benchmarks, the analyst supplies a fixed matrix of balance functions and the entropy-balancing optimizer finds weights that match the corresponding target moments. This is the standard calibration problem described in Section 2: the benchmark is defined by the balance functions, not by a specialized external optimizer.
+The simulations in this paper compare the proposed boosted method against classical fixed-moment entropy-balancing benchmarks. In these benchmarks, the analyst supplies a fixed matrix of balance funct[...] 
 
 Three fixed-moment benchmarks are used:
 \begin{enumerate}[leftmargin=2em]
 \item \textbf{Main-effect EB.} Balance $x_1,\ldots,x_p$.
 \item \textbf{All raw pairwise EB.} Balance $x_1,\ldots,x_p$ and all $x_jx_k$, $j<k$.
-\item \textbf{Oracle nonlinear EB.} Balance main effects, all raw pairwise products, and the true nonlinear function $g(x_0,x_1)$ used to generate the target shift. This is not intended to be available in real applications; it is an upper benchmark showing what happens if the correct nonlinear function is known in advance.
+\item \textbf{Oracle nonlinear EB.} Balance main effects, all raw pairwise products, and the true nonlinear function $g(x_0,x_1)$ used to generate the target shift. This is not intended to be availabl[...]
 \end{enumerate}
 
-The boosted method is evaluated against these benchmarks. Its purpose is not to beat a fixed-moment method that has already been given the correct nonlinear balance function. Rather, its purpose is to search adaptively for nonlinear regions when the correct function is not prespecified.
+The boosted method is evaluated against these benchmarks. Its purpose is not to beat a fixed-moment method that has already been given the correct nonlinear balance function. Rather, its purpose is to[...]
 
 
 
@@ -193,9 +193,9 @@ The boosted method is evaluated against these benchmarks. Its purpose is not to 
 
 \section{Overarching objective function}
 
-The objective optimized by the hybrid tree-boosted entropy-balancing method is stated at the start of this section. The remaining subsections explain the notation and show why the algorithm of repeatedly adding shallow trees is a stagewise way to minimize this objective.
+The objective optimized by the hybrid tree-boosted entropy-balancing method is stated at the start of this section. The remaining subsections explain the notation and show why the algorithm of repeate[...] 
 
-Let $q_i$ denote the normalized base weight for source unit $i$, let $H_0(x_i)$ denote the trusted hard-calibration functions, and let $\mu_0$ be their target moment vector. Let $F$ denote a boosted tree correction to the log weight. For $B$ boosting rounds, $F$ is restricted to the additive tree class
+Let $q_i$ denote the normalized base weight for source unit $i$, let $H_0(x_i)$ denote the trusted hard-calibration functions, and let $\mu_0$ be their target moment vector. Let $F$ denote a boosted t[...]
 \begin{equation*}
 \mathcal{G}_B
 =
@@ -233,15 +233,15 @@ q_i\exp\{F(x_i)+\lambda^\top H_0(x_i)\}
 E_T\{F(X)\}.
 \label{eq:overarching-objective}
 \end{align}
-This is the single objective that organizes the method. The repeated trees appear directly because the optimization is over $F\in\mathcal{G}_B$, and $\mathcal{G}_B$ is the set of functions created by adding many weak learner trees. The hard calibration appears through $\lambda^\top H_0(x_i)$ and $-\lambda^\top\mu_0$. The target-population information used by the tree layer appears through $E_T\{F(X)\}$.
+This is the single objective that organizes the method. The repeated trees appear directly because the optimization is over $F\in\mathcal{G}_B$, and $\mathcal{G}_B$ is the set of functions created by [...]
 
-In plain language, the objective asks for weights that satisfy three goals at the same time. First, the weights should remain in the entropy-balancing family starting from the base weights $q_i$. Second, the trusted hard moments, such as main effects, should remain balanced. Third, the additive tree ensemble should reduce remaining nonlinear and interaction imbalance. A tree is useful only when its leaves identify regions where the current weighted source distribution differs from the target distribution.
+In plain language, the objective asks for weights that satisfy three goals at the same time. First, the weights should remain in the entropy-balancing family starting from the base weights $q_i$. Seco[...] 
 
-The rest of this section explains each part of \eqref{eq:overarching-objective}. This ordering is intentional: the objective is stated first, and the later subsections unpack why it leads to the proposed boosting algorithm.
+The rest of this section explains each part of \eqref{eq:overarching-objective}. This ordering is intentional: the objective is stated first, and the later subsections unpack why it leads to the propo[...] 
 
 \subsection{What the objective means}
 
-The function $F(x)$ is not an outcome prediction model. It is a log-weight correction model. If $F(x_i)$ is large, unit $i$ receives a larger weight relative to its base weight. If $F(x_i)$ is small, unit $i$ receives a smaller weight. Because $F$ is an additive sum of shallow trees, each tree contributes a small local correction to the log weight.
+The function $F(x)$ is not an outcome prediction model. It is a log-weight correction model. If $F(x_i)$ is large, unit $i$ receives a larger weight relative to its base weight. If $F(x_i)$ is sm[...] 
 
 The first term in \eqref{eq:overarching-objective},
 \begin{equation*}
@@ -250,7 +250,7 @@ The first term in \eqref{eq:overarching-objective},
 q_i\exp\{F(x_i)+\lambda^\top H_0(x_i)\}
 \right],
 \end{equation*}
-is the entropy-dual normalizing term. It is the part of the objective that keeps the weights tied to the base weights $q_i$ through exponential tilting. Without this term, the method would not have the usual entropy-balancing structure.
+is the entropy-dual normalizing term. It is the part of the objective that keeps the weights tied to the base weights $q_i$ through exponential tilting. Without this term, the method would not ha[...]
 
 The second term,
 \begin{equation*}
@@ -266,13 +266,13 @@ The third term,
 \begin{equation*}
 -E_T\{F(X)\},
 \end{equation*}
-connects the tree ensemble to the target population. Since $F$ is built from tree leaves, $E_T\{F(X)\}$ is computed from the target masses of those leaves. Therefore, if a tree leaf is common in the target but underrepresented by the current weighted source sample, the objective favors increasing the log weights of source units in that leaf. If a leaf is overrepresented by the current source weights, the objective favors decreasing those log weights.
+connects the tree ensemble to the target population. Since $F$ is built from tree leaves, $E_T\{F(X)\}$ is computed from the target masses of those leaves. Therefore, if a tree leaf is common in the t[...] 
 
-This objective should be understood as a population-level or idealized target. In practice, the global minimization over all possible tree ensembles is not performed exactly. As in gradient boosting, the tree class is large and nonconvex because it contains many possible split variables, split points, and leaf structures. The proposed algorithm is therefore a stagewise approximation to \eqref{eq:overarching-objective}: it adds one weak tree at a time, takes a small step, and then restores the hard calibration constraints.
+This objective should be understood as a population-level or idealized target. In practice, the global minimization over all possible tree ensembles is not performed exactly. As in gradient boost[...]
 
 \subsection{Hard calibration layer}
 
-Let $q=(q_1,\ldots,q_n)^\top$ be the normalized base weights. Let $H_0$ be the $n\times K_0$ matrix of hard calibration functions, where the $i$th row is $H_0(x_i)^\top$, and let $\mu_0$ be the corresponding target moment vector. The hard feasible set is
+Let $q=(q_1,\ldots,q_n)^\top$ be the normalized base weights. Let $H_0$ be the $n\times K_0$ matrix of hard calibration functions, where the $i$th row is $H_0(x_i)^\top$, and let $\mu_0$ be the corres[...]
 \begin{equation*}
 \mathcal{C}_0
 =
@@ -291,7 +291,7 @@ The entropy distance from candidate weights $w$ to base weights $q$ is
 =
 \sum_{i=1}^n w_i\log\left(\frac{w_i}{q_i}\right).
 \end{equation*}
-Without the boosted tree layer, minimizing this quantity over $\mathcal{C}_0$ gives ordinary entropy balancing on the hard moments. The proposed method keeps this hard calibration layer and adds the tree ensemble only as an adaptive log-weight correction.
+Without the boosted tree layer, minimizing this quantity over $\mathcal{C}_0$ gives ordinary entropy balancing on the hard moments. The proposed method keeps this hard calibration layer and adds the t[...] 
 
 \subsection{Additive tree ensemble in the log-weight scale}
 
@@ -302,7 +302,7 @@ f_b(x)
 \sum_{j=1}^{J_b} a_{bj} I(x\in L_{bj}),
 \qquad f_b\in\mathcal{F}_{\mathrm{tree}}.
 \end{equation*}
-The coefficient $a_{bj}$ is a log-weight correction for every unit in leaf $L_{bj}$. If the current weights underrepresent the target in that leaf, the correction should be positive. If the current weights overrepresent the target in that leaf, the correction should be negative.
+The coefficient $a_{bj}$ is a log-weight correction for every unit in leaf $L_{bj}$. If the current weights underrepresent the target in that leaf, the correction should be positive. If the current we[...] 
 
 After $B$ boosting rounds, the accumulated tree correction is
 \begin{equation*}
@@ -311,7 +311,7 @@ F_B(x)
 \nu\sum_{b=1}^B f_b(x),
 \qquad 0<\nu\leq 1,
 \end{equation*}
-where $\nu$ is the learning rate. This is the direct mathematical representation of building many weak learner trees. The algorithm does not build many trees to predict an outcome. It builds many trees to create local corrections to the log weights.
+where $\nu$ is the learning rate. This is the direct mathematical representation of building many weak learner trees. The algorithm does not build many trees to predict an outcome. It builds many[...]
 
 For a fixed $F$, choosing $\lambda$ in \eqref{eq:ensemble-weight-form} so that
 \begin{equation*}
@@ -321,7 +321,7 @@ is equivalent to projecting the tree-updated weights back to the hard calibratio
 
 \subsection{Why the next tree targets balance error}
 
-The connection between the objective and the weak trees is clearest from the directional derivative. Consider adding a small function $\epsilon h(x)$ to the current ensemble $F$. The directional derivative of \eqref{eq:overarching-objective} in the direction $h$ is
+The connection between the objective and the weak trees is clearest from the directional derivative. Consider adding a small function $\epsilon h(x)$ to the current ensemble $F$. The directional deriv[...]
 \begin{align}
 \left.
 \frac{d}{d\epsilon}
@@ -335,7 +335,7 @@ E_T\{h(X)\}.
 \end{align}
 Thus the gradient of the objective in any candidate direction $h$ is a balance discrepancy: the current weighted source mean of $h(X)$ minus the target mean of $h(X)$.
 
-For a less technical interpretation, $h(x)$ is a feature that the tree is checking. If $h(x)$ is a leaf indicator, then the derivative says: compare the weighted source proportion in the leaf with the target proportion in the same leaf. A large difference means that the current weights still have a local balance problem. Therefore, the next weak tree should be chosen to find leaves with large remaining local imbalance.
+For a less technical interpretation, $h(x)$ is a feature that the tree is checking. If $h(x)$ is a leaf indicator, then the derivative says: compare the weighted source proportion in the leaf wit[...] 
 
 For a tree leaf indicator $h(x)=I(x\in L)$, the derivative becomes
 \begin{equation*}
@@ -343,7 +343,7 @@ For a tree leaf indicator $h(x)=I(x\in L)$, the derivative becomes
 -
 E_T\{I(X\in L)\}.
 \end{equation*}
-This is exactly the weighted source leaf mass minus the target leaf mass. In ordinary boosting, the next tree is chosen to approximate a prediction residual. Here, the next tree is chosen to approximate a balance residual.
+This is exactly the weighted source leaf mass minus the target leaf mass. In ordinary boosting, the next tree is chosen to approximate a prediction residual. Here, the next tree is chosen to approxima[...] 
 
 \subsection{One-tree coordinate step and the multiplicative update}
 
@@ -386,7 +386,7 @@ w_i^{(b-1)}
 \qquad x_i\in L_j.
 \label{eq:stagewise-multiplier}
 \end{equation}
-This is the multiplicative tree update used by boosted entropy balancing. The exponent $\nu$ appears because boosting takes a fractional step in the log-weight scale. When $\nu$ is small, each tree makes a modest correction; many trees are then combined to produce a smoother final set of weights.
+This is the multiplicative tree update used by boosted entropy balancing. The exponent $\nu$ appears because boosting takes a fractional step in the log-weight scale. When $\nu$ is small, each tr[...]
 
 The tree selected at round $b$ may be described as the weak learner that provides the largest approximate decrease in the additive-ensemble objective:
 \begin{equation*}
@@ -406,11 +406,11 @@ D_{\mathrm{KL}}\left(\mu_{\mathcal{L}}^T\|p_{\mathcal{L}}^{(b-1)}\right)
 \sum_{j=1}^J
 \mu_j^T\log\left(\frac{\mu_j^T}{p_j^{(b-1)}}\right).
 \end{equation*}
-A squared discrepancy criterion can be viewed as a second-order approximation to this KL leaf-mass discrepancy. This explains why a shallow tree that maximizes current leaf imbalance is a legitimate weak learner for the objective in \eqref{eq:overarching-objective}.
+A squared discrepancy criterion can be viewed as a second-order approximation to this KL leaf-mass discrepancy. This explains why a shallow tree that maximizes current leaf imbalance is a legitimate w[...] 
 
 \subsection{Projection back to hard calibration}
 
-The one-tree update in \eqref{eq:stagewise-multiplier} reduces the selected tree-balance discrepancy, but it can disturb the hard moments. The hybrid method therefore applies one more entropy projection:
+The one-tree update in \eqref{eq:stagewise-multiplier} reduces the selected tree-balance discrepancy, but it can disturb the hard moments. The hybrid method therefore applies one more entropy pro[...]
 \begin{equation*}
 w^{(b)}
 =
@@ -424,7 +424,7 @@ w^{(b)}
 \Pi_{\mathcal{C}_0}^{\mathrm{KL}}
 \left(\widetilde w^{(b)}\right),
 \end{equation*}
-where $\Pi_{\mathcal{C}_0}^{\mathrm{KL}}$ denotes the Kullback--Leibler projection onto the hard feasible set. In the additive-ensemble view, this step reoptimizes the hard-moment multiplier $\lambda$ after the current weak tree has been added to $F$.
+where $\Pi_{\mathcal{C}_0}^{\mathrm{KL}}$ denotes the Kullback--Leibler projection onto the hard feasible set. In the additive-ensemble view, this step reoptimizes the hard-moment multiplier $\la[...]
 
 Combining the pieces, one iteration is
 \begin{equation*}
@@ -435,12 +435,12 @@ w^{(b)}
 \Pi_{\mathcal{C}_0}^{\mathrm{KL}}
 \left[\widetilde w^{(b)}\right].
 \end{equation*}
-Thus the final estimator after $B$ rounds is not an unconstrained collection of tree weights. It is the output of a projected stagewise optimizer for the additive-ensemble objective in \eqref{eq:overarching-objective}. Each weak tree contributes a small local correction to the log weights, and the hard projection preserves exact balance on the trusted calibration moments.
+Thus the final estimator after $B$ rounds is not an unconstrained collection of tree weights. It is the output of a projected stagewise optimizer for the additive-ensemble objective in \eqref{eq:[...]
 
 
 \subsection{EB-offset hybrid variants}
 
-The additive-ensemble formulation also allows the estimated classical entropy-balancing dual parameters to be used directly as an offset in the boosted log-weight model. Suppose the analyst specifies a fixed calibration basis $C(x)$, which may contain main effects only or main effects plus selected interaction terms. Classical EB estimates dual parameters $\widehat\lambda_C$ and produces
+The additive-ensemble formulation also allows the estimated classical entropy-balancing dual parameters to be used directly as an offset in the boosted log-weight model. Suppose the analyst specifies [...]
 \begin{equation*}
 w_i^{\mathrm{EB},C}
 =
@@ -457,11 +457,11 @@ q_i\exp\{\widehat\lambda_C^\top C(x_i)+F_B(x_i)+\gamma^\top C(x_i)\}
 \sum_{k=1}^n q_k\exp\{\widehat\lambda_C^\top C(x_k)+F_B(x_k)+\gamma^\top C(x_k)\}
 }.
 \end{equation*}
-Here $F_B$ is the additive tree correction and $\gamma$ is the recalibration multiplier used after the tree correction. Equivalently, one may initialize the boosting procedure at $w^{\mathrm{EB},C}$ and, after each tree update, project back to the same hard moment constraints defined by $C(x)$.
+Here $F_B$ is the additive tree correction and $\gamma$ is the recalibration multiplier used after the tree correction. Equivalently, one may initialize the boosting procedure at $w^{\mathrm{EB},C}$ a[...] 
 
-This distinction is important. If $C(x)=H_{\mathrm{main}}(x)$, the EB-offset hybrid preserves exact main-effect balance. If $C(x)$ contains both main effects and pairwise products, the EB-offset hybrid preserves exact main and pairwise balance after every boosted tree correction. Thus the tree layer is not allowed to sacrifice the fixed classical EB balance; it is asked to search for residual nonlinear or localized imbalance beyond the fixed moment basis.
+This distinction is important. If $C(x)=H_{\mathrm{main}}(x)$, the EB-offset hybrid preserves exact main-effect balance. If $C(x)$ contains both main effects and pairwise products, the EB-offset hybri[...] 
 
-In the empirical studies below we report two offset variants. The main EB-offset hybrid starts from classical main-effect EB and projects back to main-effect constraints. The pairwise EB-offset hybrid starts from classical pairwise EB and projects back to main-plus-pairwise constraints. The latter is more demanding and may reduce ESS, but it gives a clean answer to whether the boosted tree layer improves residual balance after the analyst has already supplied a strong interaction basis.
+In the empirical studies below we report two offset variants. The main EB-offset hybrid starts from classical main-effect EB and projects back to main-effect constraints. The pairwise EB-offset h[...]
 
 \section{Tree-boosted entropy balancing}
 
@@ -489,11 +489,11 @@ The user-provided target moment for the same leaf is
 \begin{equation*}
 \mu_{bj}=E_T\{1(X\in L_{bj})\}.
 \end{equation*}
-In a real application, $\mu_{bj}$ must be supplied by the user, by an external target-moment system, or by a target moment oracle constructed from trusted auxiliary information. The method cannot learn a target moment that is not available in some form.
+In a real application, $\mu_{bj}$ must be supplied by the user, by an external target-moment system, or by a target moment oracle constructed from trusted auxiliary information. The method cannot le[...] 
 
 \subsection{Fitting a discrepancy tree}
 
-The tree is not fitted to predict an outcome. It is fitted to identify regions where the current weighted source distribution differs from the target distribution. A simple discrepancy score for a partition $\mathcal{L}$ is
+The tree is not fitted to predict an outcome. It is fitted to identify regions where the current weighted source distribution differs from the target distribution. A simple discrepancy score for [...]
 \begin{equation*}
 D(\mathcal{L};w)
 =
@@ -502,13 +502,13 @@ D(\mathcal{L};w)
 \sum_{i=1}^n w_i1\{x_i\in L\}-\mu_L
 \right|.
 \end{equation*}
-The tree-growing algorithm searches for splits that increase this discrepancy relative to the parent node. A split is useful when it separates a region where the source is over-represented from a region where it is under-represented.
+The tree-growing algorithm searches for splits that increase this discrepancy relative to the parent node. A split is useful when it separates a region where the source is over-represented from a regi[...] 
 
-In the implementation used here, the weak learner is a standard CART-style classification tree rather than a hand-coded quantile split search. The covariates are represented under the current source weights and the target weights. A binary domain label indicates which weighted representation is being used, and the CART tree searches for splits that separate the two weighted representations. The fitted tree is then evaluated by the leaf discrepancy $\sum_j(p_{j}^{\mathrm{source}}-p_{j}^{\mathrm{target}})^2/p_{j}^{\mathrm{target}}$. The maximum interaction depth is set to three, and minimum leaf-mass stopping rules are used to avoid unstable leaves.
+In the implementation used here, the weak learner is a standard CART-style classification tree rather than a hand-coded quantile split search. The covariates are represented under the current source w[...] 
 
 \subsection{Entropy projection for a fixed tree}
 
-For a fixed partition $\mathcal{L}=\{L_1,\ldots,L_J\}$, consider the entropy projection from old weights $w_i^{\mathrm{old}}$ to new weights $w_i^{\mathrm{new}}$ that match the tree-leaf target moments:
+For a fixed partition $\mathcal{L}=\{L_1,\ldots,L_J\}$, consider the entropy projection from old weights $w_i^{\mathrm{old}}$ to new weights $w_i^{\mathrm{new}}$ that match the tree-leaf target m[...]
 \begin{equation*}
 \min_w
 \sum_{i=1}^n w_i\log\left(\frac{w_i}{w_i^{\mathrm{old}}}\right)
@@ -570,7 +570,7 @@ This is the tree-boosted entropy balancing update. The multiplicative form is a 
 
 \subsection{Need for hard constraints}
 
-The simple tree-boosted update improves balance over tree leaves. However, because tree leaves generally do not coincide with the analyst's prespecified main-effect functions, a tree update can disturb main-effect balance. In the simulation, ordinary tree-boosted EB reduced nonlinear imbalance but had nonzero main-effect imbalance. This motivated the hybrid method.
+The simple tree-boosted update improves balance over tree leaves. However, because tree leaves generally do not coincide with the analyst's prespecified main-effect functions, a tree update can d[...]
 
 Let $H_0$ denote the hard calibration matrix. In this paper, $H_0$ is the $n\times p$ matrix of main-effect covariates. Let
 \begin{equation*}
@@ -600,7 +600,7 @@ H_0^\top w=\mu_0,
 w_i>0.
 \end{equation*}
 
-This projection is itself an entropy balancing problem, but with the tree-updated weights as the new base weights. It is the final KL projection in the stagewise objective described above: it keeps the tree-based interaction improvement as much as possible while restoring the hard constraints.
+This projection is itself an entropy balancing problem, but with the tree-updated weights as the new base weights. It is the final KL projection in the stagewise objective described above: it keeps th[...] 
 
 The update can be summarized as
 \begin{align*}
@@ -622,7 +622,7 @@ Here $\Pi_{\mathrm{EB}}$ denotes the entropy projection onto the hard calibratio
 \textbf{Algorithm 1: Hybrid tree-boosted entropy balancing with hard main effects}
 
 \begin{enumerate}[leftmargin=2em]
-\item Input source covariates $x_i$, base weights $q_i$, hard calibration functions $H_0(x_i)$, hard target moments $\mu_0$, tree-leaf target-moment provider $\mu_L$, learning rate $\nu$, number of boosting rounds $B$, tree depth, and minimum leaf mass.
+\item Input source covariates $x_i$, base weights $q_i$, hard calibration functions $H_0(x_i)$, hard target moments $\mu_0$, tree-leaf target-moment provider $\mu_L$, learning rate $\nu$, number of bo[...]
 \item Initialize $w^{(0)}$ by classical entropy balancing:
 \begin{equation*}
 w^{(0)}=\Pi_{\mathrm{EB}}\{q;H_0,\mu_0\}.
@@ -655,9 +655,9 @@ A depth-one tree creates threshold functions such as $1\{X_j\leq c\}$. A depth-t
 \begin{equation*}
 1\{X_j\leq c_j,\ X_k>c_k\},
 \end{equation*}
-which are interaction functions. Deeper trees create higher-order interaction regions. Therefore, even if the analyst does not explicitly create a column such as $X_0X_1$ or $g(X_0,X_1)$, the tree can identify regions where the joint distribution of $(X_0,X_1)$ differs between the current weighted source sample and the target.
+which are interaction functions. Deeper trees create higher-order interaction regions. Therefore, even if the analyst does not explicitly create a column such as $X_0X_1$ or $g(X_0,X_1)$, the tree can[...] 
 
-The method does not create target information from nothing. It can only use target moments that are available for the tree leaves. Its benefit is adaptive selection: from a large class of possible tree-defined moments, it chooses regions that are most relevant to remaining imbalance.
+The method does not create target information from nothing. It can only use target moments that are available for the tree leaves. Its benefit is adaptive selection: from a large class of possibl[...]
 
 \section{Diagnostics and variable importance}
 
@@ -725,7 +725,7 @@ This is the column labeled ``Est error'' in the simulation tables. It is not an 
 
 \subsection{Variable importance}
 
-For tree-based methods, variable importance is defined using split gains. Let $G_{bs}$ be the discrepancy gain from split $s$ in boosting round $b$, and let $j_{bs}$ be the variable used in that split. The importance of variable $j$ is
+For tree-based methods, variable importance is defined using split gains. Let $G_{bs}$ be the discrepancy gain from split $s$ in boosting round $b$, and let $j_{bs}$ be the variable used in that split[...]
 \begin{equation*}
 \mathrm{VI}_j
 =
@@ -743,9 +743,9 @@ In this manuscript, variable importance measures which covariates are most impor
 
 \subsection{Purpose}
 
-The Kang--Schafer design provides a familiar missing-data setting in which the response process and outcome model are simple in latent variables, but the analyst observes nonlinear transformations of those variables. This creates a realistic situation in which a linear outcome model and a fixed low-order balance matrix can be misspecified, even though useful information remains present in the observed covariates \cite{kang2007}.
+The Kang--Schafer design provides a familiar missing-data setting in which the response process and outcome model are simple in latent variables, but the analyst observes nonlinear transformations of [...]
 
-The purpose of this simulation is not to claim that the hybrid method is an oracle. The hybrid method does not observe the latent variables and does not know the true outcome model. The goal is more modest: to test whether shallow tree balance functions can adaptively recover useful regions of the observed transformed covariate space while preserving exact hard calibration on the main effects. We also examine a stronger variant that uses fixed pairwise EB as an offset and preserves the pairwise constraints throughout boosting, denoted the pairwise EB-offset hybrid.
+The purpose of this simulation is not to claim that the hybrid method is an oracle. The hybrid method does not observe the latent variables and does not know the true outcome model. The goal is more m[...] 
 
 \subsection{Data-generating mechanism}
 
@@ -774,7 +774,7 @@ X_4&=(Z_2+Z_4+20)^2.
 \end{align*}
 These transformations make simple linear regressions or fixed low-order balance functions in $X$ imperfect proxies for the latent variables that drive both response and outcome.
 
-The simulation uses $R=1000$ independently generated random samples, each with sample size $n=1000$. Target moments for the observed $X$ variables are computed from the full sample, as in a calibration setting. Estimation uses respondent outcomes and observed respondent covariates. The hybrid methods use shallow CART-style weak learners with maximum interaction depth 3, a maximum of $B_{\max}=100$ boosting rounds, learning rate $\nu=0.10$, group-specific minimum leaf-mass checks, and early stopping when the selected tree discrepancy is negligible or the effective-sample-size safeguard is reached.
+The simulation uses $R=1000$ independently generated random samples, each with sample size $n=1000$. Target moments for the observed $X$ variables are computed from the full sample, as in a calib[...]
 
 \subsection{Methods compared}
 
@@ -784,15 +784,15 @@ Six methods are compared.
 \item \textbf{OLS prediction.} Fit a linear regression of respondent outcomes on the observed transformed covariates and average the fitted predictions over the full sample.
 \item \textbf{Classical EB: main moments.} Entropy balance respondents to the full-sample means of the observed transformed covariates.
 \item \textbf{Classical EB: pairwise moments.} Entropy balance respondents to the full-sample means of the observed transformed covariates and all raw pairwise products.
-\item \textbf{EB-offset hybrid: main.} Use the estimated main-effect EB dual parameters as an offset, sequentially add shallow tree-leaf balance corrections, and project back to the hard main-effect constraints after each tree update.
-\item \textbf{EB-offset hybrid: pairwise.} Use the estimated fixed pairwise EB dual parameters as an offset, then apply the same boosted tree corrections and hard projection back to the main-plus-pairwise constraints.
+\item \textbf{EB-offset hybrid: main.} Use the estimated main-effect EB dual parameters as an offset, sequentially add shallow tree-leaf balance corrections, and project back to the hard main-eff[...]
+\item \textbf{EB-offset hybrid: pairwise.} Use the estimated fixed pairwise EB dual parameters as an offset, then apply the same boosted tree corrections and hard projection back to the main-plus-pair[...]
 \end{enumerate}
 
 \subsection{Results}
 
 \paragraph{Definitions of reported quantities.}
 
-Let $\widehat\theta_{mr}$ denote the estimate of the target mean produced by method $m$ in Monte Carlo replication $r$, and let $\theta_T=E(Y)=210$. With $R=1000$ replications, the reported bias, root mean squared error, and mean absolute error are
+Let $\widehat\theta_{mr}$ denote the estimate of the target mean produced by method $m$ in Monte Carlo replication $r$, and let $\theta_T=E(Y)=210$. With $R=1000$ replications, the reported bias,[...]
 \begin{align*}
 \mathrm{Bias}_m
 &=
@@ -809,7 +809,7 @@ Let $\widehat\theta_{mr}$ denote the estimate of the target mean produced by met
 \frac{1}{R}\sum_{r=1}^R
 \left|\widehat\theta_{mr}-\theta_T\right|.
 \end{align*}
-Bias is a signed measure of systematic estimation error, whereas RMSE and MAE are nonnegative measures of overall estimation accuracy. RMSE gives greater weight to large errors because the replication-specific errors are squared.
+Bias is a signed measure of systematic estimation error, whereas RMSE and MAE are nonnegative measures of overall estimation accuracy. RMSE gives greater weight to large errors because the replication[...] 
 
 For a weighting method, let $w_{mri}$ denote the normalized weight assigned to respondent $i$ by method $m$ in replication $r$. The effective sample size is
 \begin{equation*}
@@ -817,7 +817,7 @@ For a weighting method, let $w_{mri}$ denote the normalized weight assigned to r
 =
 \frac{1}{\sum_{i:R_i=1}w_{mri}^2},
 \end{equation*}
-and Mean ESS is its average across the $R$ replications. Let $\overline X_r=n^{-1}\sum_iX_{ri}$ denote the full-sample target mean of the observed covariates, and let $P(X)$ collect all raw pairwise products. The replication-specific balance diagnostics are
+and Mean ESS is its average across the $R$ replications. Let $\overline X_r=n^{-1}\sum_iX_{ri}$ denote the full-sample target mean of the observed covariates, and let $P(X)$ collect all raw pairw[...]
 \begin{align*}
 \mathrm{Main~L2}(w_{mr})
 &=
@@ -841,7 +841,7 @@ Mean main L2 and Mean pair L2 are the corresponding averages across replications
 \end{equation*}
 where $E(Z)=0$. Mean latent $Z$ L2 is its average across replications. The latent variables are not used by any estimator.
 
-Table~\ref{tab:ks-r1000} reports the results. The naive respondent mean is severely biased. OLS prediction substantially improves on the naive respondent mean. Among weighting methods, fixed pairwise EB improves substantially over main-effect EB. The pairwise EB-offset hybrid gives the lowest RMSE among the weighting estimators and also slightly improves the latent $Z$ diagnostic relative to fixed pairwise EB. This result supports the view that the estimated pairwise EB dual parameters can be used as a strong offset, after which boosted tree corrections search for remaining localized imbalance while preserving the supplied pairwise moments.
+Table~\ref{tab:ks-r1000} reports the results. The naive respondent mean is severely biased. OLS prediction substantially improves on the naive respondent mean. Among weighting methods, fixed pair[...]
 
 \begin{table}[H]
 \centering
@@ -868,40 +868,40 @@ EB-offset hybrid: pairwise & -0.379 & 1.121 & 0.903 & 329.4 & $5.20\times10^{-10
 \centering
 \begin{subfigure}{0.48\textwidth}
 \centering
-\includegraphics[width=\textwidth]{./ks_fig_rmse_R1000.pdf}
+\includegraphics[width=\textwidth]{../OutputData/ks_fig_rmse_R1000.pdf}
 \caption{RMSE.}
 \end{subfigure}
 \begin{subfigure}{0.48\textwidth}
 \centering
-\safeincludegraphics[width=\textwidth]{ks_fig_latentz_R1000.pdf}
+\safeincludegraphics[width=\textwidth]{../OutputData/ks_fig_z_l2_R1000.pdf}
 \caption{Mean latent $Z$ $L_2$ balance.}
 \end{subfigure}
-\caption{Kang--Schafer-style simulation results. The pairwise EB-offset hybrid starts from fixed pairwise EB and then applies adaptive tree corrections with hard pairwise reprojection. Latent $Z$ is not observed by the analyst and is used only as a simulation diagnostic.}
+\caption{Kang--Schafer-style simulation results. The pairwise EB-offset hybrid starts from fixed pairwise EB and then applies adaptive tree corrections with hard pairwise reprojection. Latent $Z$[...]
 \label{fig:ks-r1000}
 \end{figure}
 
 \subsection{Discussion}
 
-The main lesson from the Kang--Schafer-style simulation is that the boosted tree layer can be combined with a strong fixed pairwise EB offset. With $B_{\max}=100$ and a smaller learning rate, the main EB-offset hybrid improves substantially over main-effect EB but does not dominate the stronger fixed pairwise baseline. The pairwise EB-offset hybrid is more competitive because it begins from the estimated pairwise EB tilt and preserves all supplied pairwise moments while the tree ensemble corrects residual local imbalance.
+The main lesson from the Kang--Schafer-style simulation is that the boosted tree layer can be combined with a strong fixed pairwise EB offset. With $B_{\max}=100$ and a smaller learning rate, the main[...] 
 
-The result should be interpreted carefully. The hybrid methods do not use the outcome to choose tree splits, and they do not observe the true latent $Z$ variables. Therefore, the lower RMSE of the pairwise EB-offset hybrid is not a consequence of directly optimizing the outcome error or balancing the oracle latent covariates. Instead, the method uses the same type of information available to calibration methods--target moments of observed covariate functions--but lets shallow trees adaptively construct additional balance functions.
+The result should be interpreted carefully. The hybrid methods do not use the outcome to choose tree splits, and they do not observe the true latent $Z$ variables. Therefore, the lower RMSE of th[...]
 
-The simulation also highlights a useful tradeoff. The pairwise EB-offset hybrid has effective sample size similar to pairwise EB and improves RMSE in this design, while preserving exact pairwise balance after the subsequent tree corrections. This makes it a useful sensitivity analysis: when pairwise EB is already strong, the boosted layer should be evaluated against that stronger offset, not only against a main-effect EB offset.
+The simulation also highlights a useful tradeoff. The pairwise EB-offset hybrid has effective sample size similar to pairwise EB and improves RMSE in this design, while preserving exact pairwise [...]
 
 
 \section{Real-data-based evaluation using ACS microdata}
 
-The preceding simulation is useful because it controls the data-generating mechanism. However, a method intended for calibration and distribution alignment should also be examined under realistic covariate distributions. We therefore add a real-data-based analysis using the public \texttt{acs12} microdata sample distributed by OpenIntro. The data contain 2000 observations from the 2012 American Community Survey and include income, employment, hours worked, race, age, gender, citizenship, commute time, language, marital status, education, disability, and birth-quarter variables \cite{openintroacs12}. The ACS Public Use Microdata Sample provides person- and housing-unit records for microdata analysis \cite{censuspums}. We restrict the analysis to adults age 18 or older with nonmissing income, giving a finite pseudo-population of $N=1561$ individuals.
+The preceding simulation is useful because it controls the data-generating mechanism. However, a method intended for calibration and distribution alignment should also be examined under realistic cova[...] 
 
-This analysis should be interpreted as a \emph{real-data-based semi-synthetic} study rather than as a causal analysis. The covariates and outcome are real ACS records, but the source sample is generated by us. Treating the full adult ACS sample as the pseudo-population gives a known benchmark. We then repeatedly draw biased source samples from this pseudo-population using a nonlinear covariate-dependent selection rule. This design preserves real covariate relationships and a real income outcome, while still allowing estimation error to be measured because the full-sample mean is known.
+This analysis should be interpreted as a \emph{real-data-based semi-synthetic} study rather than as a causal analysis. The covariates and outcome are real ACS records, but the source sample is generat[...] 
 
-The target estimand is the full-sample mean income. We also report the mean of $\log(1+\mathrm{income})$ as a sensitivity measure because income is highly right-skewed. The source sample size is $n=450$, and the analysis uses $R=1000$ independently drawn biased source samples. The biased sampling score overrepresents localized subgroups such as older college-educated adults, employed adults with high usual hours, and men with short commutes, while underrepresenting some nonwhite non-English-speaking cells. These are intentionally localized and interaction-like discrepancies. The goal is not to claim that this is the true ACS response mechanism, but to test whether the weighting methods can recover the full-sample target under realistic covariate structure.
+The target estimand is the full-sample mean income. We also report the mean of $\log(1+\mathrm{income})$ as a sensitivity measure because income is highly right-skewed. The source sample size is $n=45[...]$
 
-We compare five estimators. The first is the unweighted biased-source mean. The second is main-effect EB, which balances the observed main-effect covariate functions. The third is fixed pairwise EB, which balances the main effects plus a fixed set of raw pairwise products among selected compact covariate summaries. The fourth is the main EB-offset hybrid boosted EB, which uses the estimated main-effect EB dual parameters as an offset and preserves main effects as hard constraints. The fifth is the pairwise EB-offset hybrid, which uses the estimated fixed pairwise EB dual parameters as an offset and projects back to the main-plus-pairwise constraints after each tree correction. Both hybrid methods add 12 boosted tree updates with learning rate $\nu=0.60$ and minimum leaf mass 0.025. The tree updates are chosen without using the outcome.
+We compare five estimators. The first is the unweighted biased-source mean. The second is main-effect EB, which balances the observed main-effect covariate functions. The third is fixed pairwise [...]
 
 \begin{table}[H]
 \centering
-\caption{Real-data-based ACS microdata analysis using $R=1000$ biased source samples of size $n=450$. The full adult ACS sample is treated as the pseudo-population benchmark. Income RMSE is in dollars. The validation total variation is the average total variation distance across fixed two-variable median leaf partitions.}
+\caption{Real-data-based ACS microdata analysis using $R=1000$ biased source samples of size $n=450$. The full adult ACS sample is treated as the pseudo-population benchmark. Income RMSE is in do[...]
 \label{tab:acs-realdata}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrrrr}
@@ -922,15 +922,15 @@ EB-offset hybrid: pairwise & -37.5 & 1130.9 & 0.118 & $5.89\times10^{-5}$ & $7.3
 \centering
 \begin{subfigure}{0.48\textwidth}
 \centering
-\safeincludegraphics[width=\textwidth]{acs_fig_rmse_income.pdf}
+\safeincludegraphics[width=\textwidth]{../OutputData/acs_fig_rmse_income.pdf}
 \caption{RMSE for mean income.}
 \end{subfigure}
 \begin{subfigure}{0.48\textwidth}
 \centering
-\safeincludegraphics[width=\textwidth]{acs_fig_validation_tv.pdf}
+\safeincludegraphics[width=\textwidth]{../OutputData/acs_fig_validation_tv.pdf}
 \caption{Validation leaf imbalance.}
 \end{subfigure}
-\caption{Real-data-based ACS analysis. The pairwise EB-offset hybrid starts from fixed pairwise EB, preserves the pairwise constraints, and achieves the lowest validation leaf imbalance, while the main EB-offset hybrid gives an intermediate balance-stability tradeoff.}
+\caption{Real-data-based ACS analysis. The pairwise EB-offset hybrid starts from fixed pairwise EB, preserves the pairwise constraints, and achieves the lowest validation leaf imbalance, while th[...]
 \label{fig:acs-realdata-main}
 \end{figure}
 
@@ -938,53 +938,53 @@ EB-offset hybrid: pairwise & -37.5 & 1130.9 & 0.118 & $5.89\times10^{-5}$ & $7.3
 \centering
 \begin{subfigure}{0.48\textwidth}
 \centering
-\safeincludegraphics[width=\textwidth]{acs_fig_ess.pdf}
+\safeincludegraphics[width=\textwidth]{../OutputData/acs_fig_ess.pdf}
 \caption{Mean effective sample size.}
 \end{subfigure}
 \begin{subfigure}{0.48\textwidth}
 \centering
-\safeincludegraphics[width=\textwidth]{acs_fig_error_boxplot.pdf}
+\safeincludegraphics[width=\textwidth]{../OutputData/acs_fig_error_boxplot.pdf}
 \caption{Error distribution for mean log income.}
 \end{subfigure}
-\caption{Weight stability and error distribution in the ACS analysis. The pairwise EB-offset hybrid behaves like a tree-corrected version of fixed pairwise EB with hard pairwise reprojection, whereas the main EB-offset hybrid retains more ESS but does not reach the same dollar-income RMSE in this experiment.}
+\caption{Weight stability and error distribution in the ACS analysis. The pairwise EB-offset hybrid behaves like a tree-corrected version of fixed pairwise EB with hard pairwise reprojection, whereas [...]
 \label{fig:acs-realdata-stability}
 \end{figure}
 
-The main finding is that all weighting methods dramatically reduce the bias of the raw source sample. The biased source mean overestimates mean income by about \$15,045 and has RMSE about \$15,127. Main-effect EB reduces this RMSE to about \$2,200. The main EB-offset hybrid reduces validation leaf total variation from 0.0149 to 0.0100 and has mean ESS 246.0, showing improved nonlinear balance relative to main-effect EB while retaining more ESS than the fixed pairwise methods. Its income RMSE is about \$1,407.
+The main finding is that all weighting methods dramatically reduce the bias of the raw source sample. The biased source mean overestimates mean income by about \$15,045 and has RMSE about \$15,12[...]
 
-Fixed pairwise EB performs best for mean income in this particular ACS experiment, with income RMSE about \$1,092 and validation total variation 0.0073. The pairwise EB-offset hybrid has income RMSE about \$1,131 and validation total variation 0.0065. Thus it is close to the fixed pairwise baseline for the income mean and has the lowest validation leaf imbalance, while preserving the pairwise constraints to numerical tolerance. This is useful rather than discouraging: it shows that when a well-chosen fixed pairwise basis already captures the relevant source-target difference, the boosted layer may mainly improve residual leaf balance rather than uniformly dominate the fixed pairwise estimator for every outcome.
+Fixed pairwise EB performs best for mean income in this particular ACS experiment, with income RMSE about \$1,092 and validation total variation 0.0073. The pairwise EB-offset hybrid has income R[...]
 
-This ACS analysis clarifies the practical role of the proposed method. In applications where analysts already know the critical interactions, fixed-moment EB may be preferable. In applications where the relevant interactions are not known in advance, the main EB-offset hybrid supplies an adaptive search layer with moderate weight concentration. The pairwise EB-offset hybrid is a stronger sensitivity analysis: it asks whether the adaptive tree layer adds value after the analyst has already supplied a rich pairwise offset and insists on preserving those interaction moments.
+This ACS analysis clarifies the practical role of the proposed method. In applications where analysts already know the critical interactions, fixed-moment EB may be preferable. In applications wh[...]
 
 \section{Interpretation of the simulation and ACS studies}
 
 The Kang--Schafer-style simulation and the ACS real-data-based analysis support several conclusions.
 
-First, the Kang--Schafer-style simulation shows that adaptive tree balance functions can be useful when relevant structure is hidden by nonlinear transformations of latent covariates. The pairwise EB-offset hybrid improves on the reported OLS prediction and fixed main-effect or pairwise EB estimators while using only observed transformed covariates and full-sample target moments.
+First, the Kang--Schafer-style simulation shows that adaptive tree balance functions can be useful when relevant structure is hidden by nonlinear transformations of latent covariates. The pairwis[...]
 
-Second, the ACS microdata analysis shows how the method behaves under real covariate distributions. With 1000 biased source samples, the main EB-offset hybrid improves substantially over main-effect EB for mean-income RMSE and validation leaf balance. Fixed pairwise EB and the pairwise EB-offset hybrid give the smallest dollar-income RMSE values, with the pairwise EB-offset hybrid giving the lowest validation leaf imbalance while preserving the supplied pairwise moments. This is a realistic outcome: boosting should be viewed as an adaptive interaction-discovery tool, not as a guarantee of dominance over every carefully chosen fixed basis.
+Second, the ACS microdata analysis shows how the method behaves under real covariate distributions. With 1000 biased source samples, the main EB-offset hybrid improves substantially over main-eff[...]
 
-Third, the hybrid hard-projection step is important. Flexible tree corrections can disturb the trusted calibration moments, whereas the hybrid versions restore the selected main-effect or pairwise constraints after every boosting update.
+Third, the hybrid hard-projection step is important. Flexible tree corrections can disturb the trusted calibration moments, whereas the hybrid versions restore the selected main-effect or pairwis[...]
 
-Fourth, the method should not be viewed as universally superior to fixed-moment EB. If the analyst already knows a sufficiently informative balance basis, fixed-moment calibration may perform as well as or better than the adaptive alternative for a particular estimand. The benefit of tree boosting is adaptive discovery when the relevant functions are not known or would be burdensome to specify manually.
+Fourth, the method should not be viewed as universally superior to fixed-moment EB. If the analyst already knows a sufficiently informative balance basis, fixed-moment calibration may perform as [...]
 
-Finally, there is a clear balance-stability tradeoff. Richer balance can require more variable weights and a lower ESS. The goal is therefore not to maximize ESS alone, but to find a useful tradeoff between balance improvement and weight stability. In the Kang--Schafer-style simulation, the pairwise EB-offset hybrid improves RMSE relative to pairwise EB without materially reducing ESS, which is an encouraging example of this tradeoff.
+Finally, there is a clear balance-stability tradeoff. Richer balance can require more variable weights and a lower ESS. The goal is therefore not to maximize ESS alone, but to find a useful trade[...] 
 
 \section{Limitations}
 
 The proposed method has several limitations.
 
-\textbf{Target moments for tree leaves are required.} The method can only balance a tree-defined cell if a target moment for that cell is available or can be derived from an accepted target-moment provider. It cannot infer target moments with no information.
+\textbf{Target moments for tree leaves are required.} The method can only balance a tree-defined cell if a target moment for that cell is available or can be derived from an accepted target-momen[...]
 
-\textbf{The algorithm is greedy.} The tree sequence is path-dependent. Different split criteria, learning rates, depths, or random seeds may produce different selected regions. Stability diagnostics should be reported.
+\textbf{The algorithm is greedy.} The tree sequence is path-dependent. Different split criteria, learning rates, depths, or random seeds may produce different selected regions. Stability diagnost[...]
 
-\textbf{Hard projection requires feasibility.} The projection step assumes that the hard main-effect constraints are feasible under the current support. If the hard target moments lie outside the convex hull of the source sample, the projection may fail or create unstable weights.
+\textbf{Hard projection requires feasibility.} The projection step assumes that the hard main-effect constraints are feasible under the current support. If the hard target moments lie outside the conv[...] 
 
 \textbf{Tree leaves can be sparse.} Small leaves can produce large multiplicative updates. Minimum leaf-mass rules, shrinkage, maximum-weight diagnostics, and ESS stopping rules are necessary.
 
-\textbf{The method does not automatically balance all interactions.} It balances interactions that are found by the tree sequence and for which target moments are available. Important regions can still be missed if the weak learner class is too limited.
+\textbf{The method does not automatically balance all interactions.} It balances interactions that are found by the tree sequence and for which target moments are available. Important regions can stil[...] 
 
-\textbf{Inference after adaptive selection is nontrivial.} Because the balance functions are selected adaptively, standard uncertainty formulas for fixed calibration may not directly apply. Bootstrap or repeated-split diagnostics may be useful, but formal theory remains an area for further research.
+\textbf{Inference after adaptive selection is nontrivial.} Because the balance functions are selected adaptively, standard uncertainty formulas for fixed calibration may not directly apply. Bootstrap [...]
 
 \section{Extensions}
 
@@ -992,102 +992,9 @@ Several extensions are natural.
 
 \subsection{Selected-leaf final refit}
 
-One alternative to projecting after every tree update is to use boosting only for feature discovery. After the boosting path is complete, collect the selected leaf indicators and run one final entropy balancing problem with hard main effects plus selected leaf functions. This gives a fixed final calibration problem and may be easier to analyze.
+One alternative to projecting after every tree update is to use boosting only for feature discovery. After the boosting path is complete, collect the selected leaf indicators and run one final entropy[...] 
 
 \subsection{Weight bounds}
 
 The hybrid method can be combined with bounded weights. For example, the hard projection could impose
 \begin{equation*}
-r_L\leq \frac{w_i}{q_i}\leq r_U.
-\end{equation*}
-This would help prevent extreme weights, although it may make exact hard balance infeasible.
-
-\subsection{Slack penalties}
-
-If exact hard calibration is too strong, one can allow slack variables. For example,
-\begin{equation*}
-H_0^\top w-\mu_0=z
-\end{equation*}
-and penalize $z$ using an $L_1$, weighted $L_1$, or quadratic penalty. This would convert hard constraints into prioritized soft constraints.
-
-\subsection{Alternative weak learners}
-
-The weak learner need not be a CART-style tree. Alternatives include stumps, interaction splines, rule lists, tensor-product bases, or domain-specific cell builders. The same entropy update applies whenever the weak learner defines a finite partition or a finite set of balance functions with target moments.
-
-\subsection{Cross-validation and stopping}
-
-Stopping rules could be based on ESS, maximum weight, out-of-sample balance, downstream prediction performance, or target-moment validation. A principled stopping rule is important because too many tree updates can overfit target moments and produce unstable weights.
-
-\section{Conclusion}
-
-Hybrid tree-boosted entropy balancing is a promising extension of classical entropy balancing. The method retains the interpretability of hard calibration on trusted moments while adding an adaptive mechanism for discovering nonlinear and interaction balance functions. Standard CART weak learners construct localized balance functions, while the hard-projection step preserves the analyst-specified calibration constraints after each adaptive update.
-
-The Kang--Schafer-style simulation provides evidence in a familiar missing-data setting. Across 1000 independently generated random samples, the pairwise EB-offset hybrid method reduces RMSE to 1.121, compared with 2.214 for main-effect EB, 1.333 for fixed pairwise EB, and 1.279 for OLS prediction. It also maintains exact main and pairwise balance and ESS similar to pairwise EB. This supports the view that adaptive tree-leaf corrections can capture useful nonlinear structure in transformed observed covariates without requiring the analyst to know the correct latent variables or outcome model.
-
-The ACS microdata analysis adds a real-data-based check. Because the covariates and income outcome come from actual ACS records, this study tests the method under more realistic covariate relationships than purely synthetic simulations. The hybrid method improves mean-income RMSE relative to main-effect EB and improves validation leaf balance, while fixed pairwise EB performs best for the income estimand at the cost of lower ESS. This result supports a nuanced conclusion: boosted EB is most valuable as an adaptive balance-search layer when the correct interaction basis is not known in advance.
-
-The appropriate interpretation is not that boosted EB replaces classical EB. Rather, boosted EB is an adaptive interaction-discovery layer that can be placed on top of classical calibration through an explicit EB-offset formulation. Its optimization target is a hard-constrained entropy objective over an additive tree ensemble: stay close to the base weights, preserve trusted hard moments, and use many weak tree corrections to reduce tree-detectable nonlinear imbalance. The most defensible workflow is to specify a set of hard moments that must be preserved, use tree boosting to search for additional nonlinear imbalances, and monitor both balance improvement and weight stability.
-
-\appendix
-
-\section{Numerical settings}
-
-The Kang--Schafer-style missing-data simulation used the following settings:
-\begin{itemize}[leftmargin=2em]
-\item $R=1000$ independently generated random samples;
-\item sample size $n=1000$ in each replication;
-\item CART maximum interaction depth 3;
-\item maximum boosting rounds $B_{\max}=100$ with early stopping;
-\item learning rate $\nu=0.10$;
-\item group-specific minimum leaf-mass checks;
-\item early stopping when the selected tree discrepancy was negligible or the effective-sample-size safeguard was reached.
-\end{itemize}
-
-\section{Computation}
-
-The simulation computations were performed in Python using NumPy, pandas, matplotlib, and scikit-learn CART trees for the weak learners. The ACS microdata analysis used Python with pandas for reading the public CSV file and NumPy for the weighting algorithms. Classical entropy balancing was solved using Newton's method on the dual objective. Tree-boosted updates were implemented as multiplicative leaf-wise entropy updates. The EB-offset hybrid method projected the temporary tree-updated weights back to the same hard constraints used by the classical EB offset after every boosting round by solving another entropy balancing problem with the temporary weights as base weights.
-
-\begin{thebibliography}{99}
-
-\bibitem{deville1992}
-Deville, J.-C. and Saerndal, C.-E. (1992).
-Calibration estimators in survey sampling.
-\textit{Journal of the American Statistical Association}, 87(418), 376--382.
-
-\bibitem{hainmueller2012}
-Hainmueller, J. (2012).
-Entropy balancing for causal effects: A multivariate reweighting method to produce balanced samples in observational studies.
-\textit{Political Analysis}, 20(1), 25--46.
-
-
-\bibitem{kang2007}
-Kang, J. D. Y. and Schafer, J. L. (2007).
-Demystifying double robustness: A comparison of alternative strategies for estimating a population mean from incomplete data.
-\textit{Statistical Science}, 22(4), 523--539.
-
-\bibitem{friedman2001}
-Friedman, J. H. (2001).
-Greedy function approximation: A gradient boosting machine.
-\textit{The Annals of Statistics}, 29(5), 1189--1232.
-
-\bibitem{cart1984}
-Breiman, L., Friedman, J. H., Olshen, R. A., and Stone, C. J. (1984).
-\textit{Classification and Regression Trees}.
-Wadsworth.
-
-
-
-\bibitem{openintroacs12}
-OpenIntro. (2026).
-\textit{American Community Survey, 2012 (acs12)}.
-Data set documentation. Available at \url{https://www.openintro.org/data/index.php?data=acs12}.
-
-\bibitem{censuspums}
-U.S. Census Bureau. (2026).
-\textit{Public Use Microdata Sample (PUMS) Data}.
-American Community Survey microdata documentation and access page. Available at \url{https://www.census.gov/programs-surveys/acs/microdata/access.html}.
-
-\end{thebibliography}
-
-\end{document}
-
