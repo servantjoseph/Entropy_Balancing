@@ -2,7 +2,7 @@
 
 Methods, simulations, and supporting materials for estimating entropy-balancing weights and evaluating their performance in observational and missing-data settings.
 
-The repository combines classical entropy balancing with boosted, tree-based balance corrections. It includes reusable Python utilities, executable simulation scripts and notebooks, documentation, example data, and generated result files.
+The repository combines classical entropy balancing with boosted, tree-based balance corrections. It includes reusable Python utilities, executable simulation scripts and notebooks, documentation, and supporting artifacts for reproducible analyses.
 
 > **Status:** Research code. APIs, defaults, and output formats may change as the analyses develop. Review the source and notebook assumptions before using the code for production or applied inference.
 
@@ -24,16 +24,16 @@ The repository combines classical entropy balancing with boosted, tree-based bal
 
 ## Overview
 
-Entropy balancing constructs nonnegative weights for one sample so that weighted covariate moments match specified target moments from another sample or population. In this repository, the workflow is used to study settings such as:
+Entropy balancing constructs nonnegative weights for one sample so that weighted covariate moments match specified target moments from another sample or population. In this repository, the workflow is organized around a reusable weighting engine, simulation scripts, and analysis notebooks for comparing balance diagnostics and estimation performance.
 
 - survey or sample reweighting;
 - covariate shift and distributional adjustment;
 - missing-data and response-bias problems; and
 - simulation-based comparisons of weighting and prediction estimators.
 
-The main implementation fits the dual parameters of the entropy-balancing optimization problem with a Newton-style iteration. A ridge-stabilized Hessian and a least-squares fallback are used when the system is ill-conditioned or singular.
+The main implementation fits the dual parameters of the entropy-balancing optimization problem with a Newton-style iteration. A ridge-stabilized Hessian and a least-squares fallback are used when the default update is unstable or poorly conditioned.
 
-The repository also implements a hybrid approach: classical entropy balancing enforces selected hard moment constraints, while shallow CART models identify remaining distributional imbalance and iteratively update the weights. An effective-sample-size safeguard and early stopping prevent excessively concentrated weights.
+The repository also implements a hybrid approach: classical entropy balancing enforces selected hard moment constraints, while shallow CART models identify remaining distributional imbalance and inform iterative corrections.
 
 ## Repository layout
 
@@ -41,16 +41,17 @@ The repository also implements a hybrid approach: classical entropy balancing en
 .
 ├── entropy_common.py                 # Reusable weighting, diagnostics, and hybrid methods
 ├── KS_EBW_Boosted_code.py            # Kang–Schafer-style missing-data simulation
-├── KS_EBW_Boosted_code.ipynb         # Notebook version of the KS analysis
 ├── ACS_EBW_Boosted_code_paper.ipynb  # ACS analysis notebook
-├── KS_EBW_Boosted_code_note.md       # Numerical-method notes
-├── acs12.csv                         # Example ACS data used by the analysis
-├── Doc/MathEBW.tex                    # Mathematical documentation
-├── OutputData/                        # Generated summaries, raw rows, and figures
-└── Old/                               # Historical/experimental versions of scripts
+├── KS_EBW_Boosted_code_paper.ipynb   # KS analysis notebook
+├── acs12.csv                        # Example ACS data used by the analysis
+├── Doc/                             # Supporting notes, math, and documentation
+│   ├── KS_EBW_Boosted_code_note.md  # Numerical-method notes
+│   └── MathEBW.tex                  # Mathematical documentation
+├── OutputData/                      # Generated summaries, raw rows, and figures
+└── Old/                             # Archived historical notebook/script versions
 ```
 
-The `Old/` directory is retained for provenance and comparison. New analyses should generally use `entropy_common.py` and the current top-level scripts rather than the historical files.
+The repository currently keeps only the two active analysis notebooks at the top level. Earlier or superseded notebook versions and scripts are archived under `Old/`, while supporting notes and mathematical write-ups live in `Doc/`.
 
 ## Methods
 
@@ -132,7 +133,7 @@ For a complete worked analysis, open either notebook in Jupyter:
 ```bash
 jupyter notebook ACS_EBW_Boosted_code_paper.ipynb
 # or
-jupyter notebook KS_EBW_Boosted_code.ipynb
+jupyter notebook KS_EBW_Boosted_code_paper.ipynb
 ```
 
 Run notebook cells in order. Check the input paths and output locations if you launch a notebook from a directory other than the repository root.
@@ -156,7 +157,7 @@ Run it with:
 python KS_EBW_Boosted_code.py
 ```
 
-The checked-in script uses a fixed base seed, 1,000 replications, sample size 1,000, up to 100 tree corrections, learning rate `0.10`, and multiprocessing by default. The run can be computationally expensive; edit the `main()` call or invoke the functions from a Python session to perform a smaller smoke test.
+The checked-in script uses a fixed base seed, 1,000 replications, sample size 1,000, up to 100 tree corrections, learning rate `0.10`, and multiprocessing by default. The run can be computationally expensive for the default settings, so smaller values are often used for exploratory checks.
 
 For example:
 
@@ -167,11 +168,11 @@ raw, summary = run(R=10, n=500, B=20, nu=0.10, n_jobs=1)
 print(summary)
 ```
 
-The script writes simulation tables and PDF figures to the directory containing the script. When run from the repository root, these are placed in the repository root; the checked-in `OutputData/` directory contains a set of generated result artifacts from prior analyses.
+The script writes simulation tables and PDF figures to the directory containing the script. When run from the repository root, these are placed in the repository root; the checked-in `OutputData/` directory contains saved artifacts for the published-style summary tables and figures.
 
 ### ACS analysis
 
-`ACS_EBW_Boosted_code_paper.ipynb` contains the American Community Survey-oriented analysis using `acs12.csv`. Because it is a notebook, the exact execution sequence and data preparation steps are documented in the notebook cells themselves. Execute it from the repository root so relative paths resolve as expected.
+`ACS_EBW_Boosted_code_paper.ipynb` contains the American Community Survey-oriented analysis using `acs12.csv`. Because it is a notebook, the exact execution sequence and data preparation steps are documented in the notebook itself.
 
 ## Core API
 
@@ -194,7 +195,7 @@ Important `eb_fit` controls include `max_iter`, `tol`, and `ridge`. Important `h
 
 ## Data and outputs
 
-`acs12.csv` is the primary example input file for the ACS notebook. Treat it as analysis data rather than a general-purpose benchmark dataset; inspect the notebook for variable construction, scaling, filtering, and target definitions.
+`acs12.csv` is the primary example input file for the ACS notebook. Treat it as analysis data rather than a general-purpose benchmark dataset; inspect the notebook for variable construction, scaling, and estimation choices before reusing it for a different application.
 
 `OutputData/` contains previously generated artifacts, including:
 
@@ -203,14 +204,14 @@ Important `eb_fit` controls include `max_iter`, `tol`, and `ridge`. Important `h
 - metadata (`acs_realdata_metadata.json`); and
 - PDF figures for RMSE, effective sample size, error, validation imbalance, and latent-covariate balance.
 
-These files are useful for inspecting prior results and reproducing plots, but they are not guaranteed to be regenerated identically across operating systems, dependency versions, or changes to the analysis code.
+These files are useful for inspecting prior results and reproducing plots, but they are not guaranteed to be regenerated identically across operating systems, dependency versions, or changes to the underlying code.
 
 ## Interpreting diagnostics
 
-- **Moment imbalance:** Compare `X.T @ w` with the requested target moments. Small numerical discrepancies are expected; large discrepancies indicate infeasible targets, insufficient convergence, or unsuitable inputs.
+- **Moment imbalance:** Compare `X.T @ w` with the requested target moments. Small numerical discrepancies are expected; large discrepancies indicate infeasible targets, insufficient convergence, or poor conditioning.
 - **Effective sample size (ESS):** Higher ESS generally indicates less concentrated weights. A low ESS means that a small number of observations dominate the estimate and uncertainty may be large.
 - **Maximum weight:** Inspect alongside ESS. Extreme weights can signal limited overlap or overly ambitious balance constraints.
-- **Leaf discrepancy and validation total variation:** These assess distributional balance beyond the explicitly constrained moments. They should be interpreted with the chosen tree depth, minimum leaf mass, and validation partitions in mind.
+- **Leaf discrepancy and validation total variation:** These assess distributional balance beyond the explicitly constrained moments. They should be interpreted with the chosen tree depth, minimum leaf mass, and score tolerance.
 - **Bias, MAE, and RMSE:** In simulations, use the raw truth and repeated-sample summaries together rather than relying on a single metric.
 
 Entropy balancing does not create overlap where none exists. Before relying on estimates, inspect covariate support and the resulting weight distribution.
@@ -246,8 +247,8 @@ Suggestions, bug reports, and improvements are welcome through GitHub issues and
 
 No license is currently declared for this repository. Contact the repository owner before redistributing the code or using it in a product.
 
-If you use this work, cite the repository and the associated paper or working documentation when a formal publication becomes available. The mathematical development currently included with the project is available in [`Doc/MathEBW.tex`](Doc/MathEBW.tex), and implementation notes are available in [`KS_EBW_Boosted_code_note.md`](KS_EBW_Boosted_code_note.md).
+If you use this work, cite the repository and the associated paper or working documentation when a formal publication becomes available. The mathematical development currently included with the project is in `Doc/MathEBW.tex` and the supporting notes are in `Doc/KS_EBW_Boosted_code_note.md`.
 
 ## Acknowledgments
 
-This project builds on the entropy-balancing literature and related work on calibration weighting, missing-data adjustment, covariate shift, and tree-based distributional balancing. Please consult the mathematical documentation and analysis notebooks for the references and assumptions used in a particular result.
+This project builds on the entropy-balancing literature and related work on calibration weighting, missing-data adjustment, covariate shift, and tree-based distributional balancing. Please consult the references in the notebooks and supporting notes for methodological background.
